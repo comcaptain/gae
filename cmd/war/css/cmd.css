@@ -5,6 +5,6 @@
 	background: black;
 	padding: 22px 12px;
 }
-.cmdInput[focus] {
+.cmdInput:focus {
 	outline: 0px solid transparent;
 }

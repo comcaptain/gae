@@ -24,7 +24,10 @@
 		<script type="text/javascript">
 			$(document).ready(function() {
 				$("[contenteditable]").first().focus();
+				$("[contenteditable]").keyup(function(event) {
+				});
 			});
+			$(".console").cmdConsole();
 		</script>
 	</head>
 
