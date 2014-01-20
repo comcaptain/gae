@@ -1,0 +1,10 @@
+.console {
+	font-family: "Menlo Regular","Lucida Console", Monaco, monospace, Courier New, Fixed;
+	font-size: 12px;
+	color: white;
+	background: black;
+	padding: 22px 12px;
+}
+.cmdInput[focus] {
+	outline: 0px solid transparent;
+}
