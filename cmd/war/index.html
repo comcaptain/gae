@@ -15,7 +15,6 @@
 			.console {
 				width: 600px;
 				height: 400px;
-				border: 1px dashed green;
 				margin: 20px auto;
 			}
 		</style>
@@ -23,18 +22,13 @@
 		<script src="js/cmd.js" ></script>
 		<script type="text/javascript">
 			$(document).ready(function() {
-				$("[contenteditable]").first().focus();
-				$("[contenteditable]").keyup(function(event) {
-				});
+				$(".console").cmdConsole();
 			});
-			$(".console").cmdConsole();
 		</script>
 	</head>
 
 	<body>
 		<div class="console">
-			<span>This is a web command line </span><br>
-			&gt;&nbsp;<span contenteditable="true" class="cmdInput"></span>
 		</div>
 	</body>
 </html>
