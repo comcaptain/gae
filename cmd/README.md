@@ -47,4 +47,4 @@ require value
 for a param, the following properties are required:
 
 1. can combine
-2. 
+2. require a value
