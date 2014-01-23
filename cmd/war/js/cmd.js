@@ -188,7 +188,7 @@ function CommandOption(content, hint) {
 					cmd.addOption(new CommandOption("c", "c option"));
 					if (command.indexOf(" "))
 						dump(cmd.analyzeCommand(command.substr(command.indexOf(" "))));
-					cmdConsole.showCmdResult();
+					cmdConsole.displayMessage();
 					cmdConsole.startNewInput();
 					cmdConsole.registerCommand(command);					
 				});
@@ -202,7 +202,7 @@ function CommandOption(content, hint) {
     			$inputBlock.append($cmdConsoleInput);
     			$cmdConsoleInput.focus();
 			},
-    		showCmdResult: function() {
+    		displayMessage: function() {
     			var $cmdConsoleBlockResult = $('<div class="cmd_console_block cmd_console_block_result"></div>');
     			this.$consoleDiv.append($cmdConsoleBlockResult);
     			for (var color in this.commandResult) {
@@ -212,6 +212,7 @@ function CommandOption(content, hint) {
         				$cmdConsoleBlockResult.append('<span class="cmd_console_line ' + colorClass + '">' + resultLines[i] + '</span>');
         			}
     			}
+    			this.commandResult = [];
     		},
     		thinking: function() {
     			this.$currentInput.removeAttr("contenteditable");
