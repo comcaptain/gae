@@ -37,3 +37,4 @@ version 0.3 expectations:
 
 1. --help option
 2. be able to display more kinds of data: such as table
+3. clear command
