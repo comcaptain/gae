@@ -41,3 +41,4 @@ version 0.3 expectations:
 4. select and paste
 5. command hint
 #6. shortcut for a command
+6. tab to list commands
