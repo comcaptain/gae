@@ -26,3 +26,12 @@ version 0.2:
 others:
 
    a javascript version "var_dump" is added, just dump(something) will print something in console
+   
+   
+version 0.3(developing, 60%):
+
+1. be able to display more kinds of data: such as table [ok]
+
+   Supports withBorder property
+2. --help option [ok]
+3. clear command [ok]

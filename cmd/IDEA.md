@@ -35,8 +35,9 @@ version 0.2 expectations:
 version 0.3 expectations:
 ===
 
-1. --help option
-2. be able to display more kinds of data: such as table
-3. clear command
+1. be able to display more kinds of data: such as table [ok]
+2. --help option [ok]
+3. clear command [ok]
 4. select and paste
 5. command hint
+#6. shortcut for a command
