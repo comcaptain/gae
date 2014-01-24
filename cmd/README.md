@@ -1,4 +1,4 @@
-cmd
+Web Javascript CMD UI
 ===
 
 for cmd use
