@@ -18,9 +18,10 @@
 		<script type="text/javascript">
 			$(document).ready(function() {
 				var cmdObj = $("body").cmdConsole();
-				var cmd = new Command("hello", "hello world");
+				var cmd = new Command("cal", "cal [expression], calculate, use javascript grammar");
+				cmd.valueRequired = true;
 				cmd.execute = function(data) {
-					return "hello world";
+					return eval(data[0]["value"][0]);
 				};
 				cmdObj.registerCommand(cmd);
 			});

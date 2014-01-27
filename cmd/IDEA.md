@@ -42,3 +42,8 @@ version 0.3 expectations:
 #5. command hint
 #6. shortcut for a command
 5. tab to list commands [ok]
+
+version 0.4 expectations:
+===
+
+1. double quotes to group value with inner spaces

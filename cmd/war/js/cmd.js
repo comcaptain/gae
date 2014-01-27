@@ -241,7 +241,7 @@ CmdDisplayTable.prototype.addTr = function(tds) {
 						var result;
 						if (hasOption) {
 							var data = command.analyzeCommand(optionStr);
-							result = command.execute(data);
+							result = command.execute(data) + "";
 						}
 						else {
 							result = command.execute();
