@@ -35,3 +35,5 @@ version 0.3(developing, 60%):
    Supports withBorder property
 2. --help option [ok]
 3. clear command [ok]
+4. select and paste [ok]
+5. tab to list commands [ok]

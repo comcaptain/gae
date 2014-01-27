@@ -17,7 +17,12 @@
 		<script src="js/cmd.js" ></script>
 		<script type="text/javascript">
 			$(document).ready(function() {
-				$("body").cmdConsole();
+				var cmdObj = $("body").cmdConsole();
+				var cmd = new Command("hello", "hello world");
+				cmd.execute = function(data) {
+					return "hello world";
+				};
+				cmdObj.registerCommand(cmd);
 			});
 		</script>
 	</head>

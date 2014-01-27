@@ -169,7 +169,8 @@ CmdDisplayTable.prototype.addTr = function(tds) {
 (function( $ ) { 
     $.cmdConsole = function(options, $consoleDiv) {
     	this.settings = $.extend({
-    		info: "This is just for fun.\nWeb console UI. \nversion 0.3 60%"
+    		info: "This is just for fun.\nWeb console UI. \nversion 0.3",
+    		rightPaste: false
     	}, options);
     	this.$consoleDiv = $consoleDiv;
     	this.consoleDiv = $consoleDiv[0];
@@ -177,6 +178,7 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     	this.registeredCommands = [];
     	this.dataForDisplay = [];
     	this.currentCommandIndex = -1;
+    	this.clipboard = undefined;
     	this.$currentInput = undefined;
     	this.init();
     };
@@ -199,6 +201,26 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     			        range.collapse(false);//collapse the range to the end point. false means collapse to end rather than the start
     			        range.select();//Select the range (make it the visible selection
     			    }
+    			},
+    			getSelectedText: function() {
+    			    if (window.getSelection) {
+    			        return window.getSelection().toString();
+    			    } else if (document.selection) {
+    			        return document.selection.createRange().text;
+    			    }
+    			    return '';
+    			},
+    			disableRightClickMenu: function($ele) {
+    				$ele.attr("oncontextmenu", "return false;");
+    			}
+    		},
+    		onSelect: function(ele, event) {
+    			var selectedText = $.trim(this.utils.getSelectedText());
+    			if (selectedText) this.clipboard = selectedText;
+    		},
+    		onRightClick: function(ele, event) {
+    			if (this.clipboard) {
+    				this._enterCommand(this.clipboard);
     			}
     		},
 			onEnter: function(ele, event) {
@@ -239,6 +261,29 @@ CmdDisplayTable.prototype.addTr = function(tds) {
 					cmdConsole.logCommand(inputStr);					
 				});
 			},
+			onTab: function(ele, event) {
+				var inputStr = $.trim(this.$currentInput.text());
+				var message = "";
+				var count = 0;
+				var lastMatchedCmd = undefined;
+				for (var cmd in this.registeredCommands) {
+					if (!inputStr || cmd.indexOf(inputStr) == 0) {
+						if (message) message += "\n";
+						message += cmd;
+						count++;
+						lastMatchedCmd = cmd;
+					}
+				}
+				if (count == 0) message = "none";
+				if (count == 1) {
+					this._replaceCommand(lastMatchedCmd);
+					return;
+				}
+				this._addDisplayMessage(message, "green");
+				this.displayMessage();
+				this.startNewInput();
+				this._replaceCommand(inputStr);
+			},
 			startNewInput: function() {
     			var $inputBlock = $('<div class="cmd_console_block cmd_console_block_input cmd_console_line"></div>');
     			this.$consoleDiv.append($inputBlock);
@@ -267,6 +312,15 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     				}
     			}
     			this._clearDisplayData();
+    		},
+    		_enterCommand: function(command) {
+				var currentText = this.$currentInput.text();
+				this.$currentInput.text(currentText + command);
+				this.utils.moveCursorToEnd(this.$currentInput[0]);
+    		},
+    		_replaceCommand: function(command) {
+    			this.$currentInput.text(command);
+    			this.utils.moveCursorToEnd(this.$currentInput[0]);
     		},
     		_generateTableResult: function($container, tableData, colorClass) {
     			var tableClass = 'cmd_console_table ' + colorClass;
@@ -324,27 +378,19 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     			if (this.currentCommandIndex < 0) return;
     			if (this.currentCommandIndex >= this.commandHistory.length - 1) return;
     			this.currentCommandIndex ++;
-    			this.$currentInput.text(this.commandHistory[this.currentCommandIndex]);
-    			this.utils.moveCursorToEnd(this.$currentInput[0]);
+    			this._replaceCommand(this.commandHistory[this.currentCommandIndex]);
     		},
     		showPrevCommand: function() {
     			if (this.currentCommandIndex < 0) return;
     			if (this.currentCommandIndex == 0) return;
     			this.currentCommandIndex --;
-    			this.$currentInput.text(this.commandHistory[this.currentCommandIndex]);
-    			this.utils.moveCursorToEnd(this.$currentInput[0]);
+    			this._replaceCommand(this.commandHistory[this.currentCommandIndex]);
     		},
     		init: function() {
     			this._initConsoleByHtmlInsertion();
     			this._bindEvents();
     			this._embedInternalCommand();
-				var cmd = new Command("t", "-test this is a test command");
-				cmd.addOption(new CommandOption("a", "a option"));
-				var b = new CommandOption("b", "b option");
-				b.valueRequired = true;
-				cmd.addOption(b);
-				cmd.addOption(new CommandOption("c", "c option"));
-    			this.registerCommand(cmd);
+				if (this.settings.rightPaste) this.utils.disableRightClickMenu(this.$consoleDiv);
     		},
     		registerCommand: function(cmd) {
     			this.registeredCommands[cmd.content] = cmd;
@@ -377,7 +423,25 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     					event.preventDefault();    		
     					cmdConsole.showNextCommand();
     				}
+    				//tab
+    				else if (event.keyCode == 9) {
+    					event.preventDefault();
+    					cmdConsole.onTab(this, event);
+    				}
     			});
+    			if (this.settings.rightPaste) {
+        			this.$consoleDiv.mouseup(function(event) {
+        				//left mouse click
+        				if (event.which == 1) {
+        					cmdConsole.onSelect(this, event);
+        				}
+        				//right mouse click
+        				else if (event.which == 3) {
+        					event.preventDefault();
+        					cmdConsole.onRightClick(this, event);
+        				}
+        			});
+    			}
     		},
     		//below are internal commands
     		_embedInternalCommand: function() {

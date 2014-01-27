@@ -38,7 +38,7 @@ version 0.3 expectations:
 1. be able to display more kinds of data: such as table [ok]
 2. --help option [ok]
 3. clear command [ok]
-4. select and paste
-5. command hint
+4. select and paste [ok] [because I can't modify clipboard without user click, and the clicked button has to been covered by an invisible flash button. So I wanna use in-page select and paste: use a js global variable as the clipboard.]
+#5. command hint
 #6. shortcut for a command
-6. tab to list commands
+5. tab to list commands [ok]
