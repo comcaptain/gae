@@ -63,7 +63,6 @@ Command.prototype._toOptionValueStringPairs = function(str) {
 	var optionValueStringPairList = [];
 	var optionValueStringPair = [];
 	var parts = str.split(" ");
-	var hasValue = false;
 	for (var i = 0; i < parts.length; i++) {
 		var part = parts[i];
 		if (this._isOptionString(part)) {
@@ -79,15 +78,11 @@ Command.prototype._toOptionValueStringPairs = function(str) {
 			else optionValueStringPair["option"].push(part);
 		}
 		else {
-			hasValue = true;
 			if (!optionValueStringPair["value"]) optionValueStringPair["value"] = [part];
 			else optionValueStringPair["value"].push(part);
 		}
 	}
 	if (optionValueStringPair != []) optionValueStringPairList.push(optionValueStringPair);
-	if (!hasValue && this.valueRequired) {
-		throw "Value is required";
-	}
 	return optionValueStringPairList;
 }
 Command.prototype._getOptionObjFromOptionStr = function(optionStr) {
@@ -244,6 +239,9 @@ CmdDisplayTable.prototype.addTr = function(tds) {
 							result = command.execute(data) + "";
 						}
 						else {
+							if (command.valueRequired) {
+								throw "Value is required";
+							}
 							result = command.execute();
 						}
 						if (result) cmdConsole._addDisplayMessage(real_dump(result), "green");
