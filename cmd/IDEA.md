@@ -47,3 +47,4 @@ version 0.4 expectations:
 ===
 
 1. double quotes to group value with inner spaces
+2. add force no option command
