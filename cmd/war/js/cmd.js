@@ -170,7 +170,7 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     $.cmdConsole = function(options, $consoleDiv) {
     	this.settings = $.extend({
     		info: "This is just for fun.\nWeb console UI. \nversion 0.3",
-    		rightPaste: false
+    		rightPaste: true
     	}, options);
     	this.$consoleDiv = $consoleDiv;
     	this.consoleDiv = $consoleDiv[0];
