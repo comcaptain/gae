@@ -86,6 +86,7 @@ Command.prototype._toOptionValueStringPairs = function(str) {
 	return optionValueStringPairList;
 }
 Command.prototype._getOptionObjFromOptionStr = function(optionStr) {
+	//if there is only one single option
 	if (this.options[optionStr]) return [this.options[optionStr]];
 	var optionObjs = [];
 	var isCombine = true;
@@ -107,6 +108,7 @@ Command.prototype._getOptionObjFromOptionStr = function(optionStr) {
 	}
 	throw "Option -"  + optionStr + " is not supported!";
 }
+
 Command.prototype._referenceOptionObj = function(optionValueStringPairList) {
 	var optionValuePairList = [];
 	for (var i in optionValueStringPairList) {
@@ -142,6 +144,17 @@ Command.prototype.analyzeCommand = function(str) {
 	var optionValuePairList = this._referenceOptionObj(optionValueStringPairList);
 	return optionValueStringPairList;
 }
+//data format:
+//[
+// {
+//   "option": "optionObjs",
+//   "value": ["val1", "val2", ...]
+// },
+// {
+//   "option": "optionObjs",
+//   "value": ["val1", "val2", ...]
+// }
+//]
 Command.prototype.execute = function(data) {
 	if (data) return real_dump(data);
 	return "default execute";
@@ -286,7 +299,7 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     			var $inputBlock = $('<div class="cmd_console_block cmd_console_block_input cmd_console_line"></div>');
     			this.$consoleDiv.append($inputBlock);
     			$inputBlock.append('<span class="cmd_console_arrow">&gt;</span>');
-    			var $cmdConsoleInput = $('<span contenteditable="true" class="cmd_console_input"></span>');
+    			var $cmdConsoleInput = $('<span contenteditable="true" spellcheck="false" class="cmd_console_input"></span>');
     			this.$currentInput = $cmdConsoleInput;
     			$inputBlock.append($cmdConsoleInput);
     			$cmdConsoleInput.focus();
@@ -445,6 +458,8 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     		_embedInternalCommand: function() {
     			this.registerCommand(this._clearCommand());
     			this.registerCommand(this._helpCommand());
+    			this.registerCommand(this._getRGBCommand());
+    			this.registerCommand(this._getHexColorCommand());
     		},
     		_clearCommand: function() {
     			var cmd = new Command("clear", "Clear all messages on the screen");
@@ -459,6 +474,42 @@ CmdDisplayTable.prototype.addTr = function(tds) {
     			var cmd = new Command("help", "help");
     			cmd.execute = function() {
     				return "Hello world!";
+    			}
+    			return cmd;
+    		},
+    		_getRGBCommand: function() {
+    			var cmd = new Command("rgb", "input hexformat color, e.g. #00FF00, get rgb format color");
+    			cmd.valueRequired = true;
+    			cmd.execute = function(data) {
+    				var value = data[0]["value"][0];
+    				var matches = value.match(/^#?([0-9a-fA-F]{6})$/);
+    				if (!matches) {
+    					throw "You must input a hexformat color, e.g. #00FF00 or 00FF00";
+    				}
+    				var hexString = matches[1];
+    				return "rgb("
+    						+ parseInt("0x" + hexString.substr(0, 2)) + ","
+    						+ parseInt("0x" + hexString.substr(2, 2)) + ","
+    						+ parseInt("0x" + hexString.substr(4, 2)) + ")";
+    			}
+    			return cmd;
+    		},
+    		_getHexColorCommand: function() {
+    			var help = "input rgb format color, e.g. rgb(0,255,0) or (0,255,0) or 0,255,0 \nWarning: no space is allowed";
+    			var cmd = new Command("hexColor", help);
+    			cmd.valueRequired = true;
+    			cmd.execute = function(data) {
+    				var value = data[0]["value"][0];
+    				var matches = value.match(/^\(?([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5]),([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5]),([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\)?$/);
+    				if (!matches) {
+    					throw "You must " + help;
+    				}
+    				var toToDigitsHex = function(numStr) {
+    					var hexStr = parseInt(numStr).toString("16");
+    					if (hexStr.length == 1) hexStr = "0" + hexStr;
+    					return hexStr.toUpperCase();
+    				}
+    				return "#" + toToDigitsHex(matches[1]) + toToDigitsHex(matches[2]) + toToDigitsHex(matches[3]);
     			}
     			return cmd;
     		}

@@ -28,7 +28,7 @@ others:
    a javascript version "var_dump" is added, just dump(something) will print something in console
    
    
-version 0.3(developing, 60%):
+version 0.3(developing, 100%):
 
 1. be able to display more kinds of data: such as table [ok]
 
@@ -37,3 +37,7 @@ version 0.3(developing, 60%):
 3. clear command [ok]
 4. select and paste [ok]
 5. tab to list commands [ok]
+
+version 0.3.1:
+
+1. following internal commands are added: rgb [hexColor], hexColor [rgbColor]
