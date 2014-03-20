@@ -26,8 +26,30 @@ function dump(v) {
 	console.log(real_dump(v));
 }
 
-
-
+function Application() {
+	this.currentHandler = null;
+	this.name = "app";
+	this.welcome = "Hello, I'm app."
+	this.main = function(value) {
+		this.end(new CmdMessage(value + "\nexited", "orange"));
+	};
+	this.start = function(optionStr) {
+		this.next(new CmdMessage(this.name + " started\n" + this.welcome, "orange"), this.main)
+	};
+}
+Application.prototype = {
+	displayMessage: function(message) {
+		$(document).trigger($.cmdConsole.prototype.displayMessageEventName, message);
+	},
+	end: function(message) {
+		$(document).trigger($.cmdConsole.prototype.applicationCompleteEventName, message);
+	},
+	next: function(message, nextHandler) {
+		this.currentHandler = nextHandler;
+		$(document).trigger($.cmdConsole.prototype.commandCompleteEventName, message);
+	}
+};
+Application.prototype.constructor = Application;
 function Command(content, hint) {
 	this.content = content;
 	this.hint = hint;
@@ -35,6 +57,7 @@ function Command(content, hint) {
 	this.options = [];
 }
 Command.prototype = {
+	name: "CmdConsoleCommand",
 	addOption: function(option) {
 		this.options[option.content] = option;
 	},
@@ -144,28 +167,53 @@ Command.prototype = {
 		var optionValuePairList = this._referenceOptionObj(optionValueStringPairList);
 		return optionValueStringPairList;
 	},
-	//data format:
-	//[
-	// {
-	//   "option": "optionObjs",
-	//   "value": ["val1", "val2", ...]
-	// },
-	// {
-	//   "option": "optionObjs",
-	//   "value": ["val1", "val2", ...]
-	// }
-	//]
-	execute: function(data) {
+	/*
+	data format:
+	[
+	 {
+	   "option": "optionObjs",
+	   "value": ["val1", "val2", ...]
+	 },
+	 {
+	   "option": "optionObjs",
+	   "value": ["val1", "val2", ...]
+	 }
+	]
+	*/
+	executeImpl: function(data) {
 		if (data) return real_dump(data);
 		return "default execute";
+	},
+	execute: function(data) {
+		if (!data && this.valueRequired) {
+			this.end(new CmdMessage("Value is required", "red"));
+			return;
+		}
+		this.executeImpl(data)
+	},
+	end: function(message) {
+		$(document).trigger($.cmdConsole.prototype.commandCompleteEventName, message);
+	},
+	displayMessage: function(message) {
+		$(document).trigger($.cmdConsole.prototype.displayMessageEventName, message);
 	}
 }
+Command.prototype.constructor = Command;
 function CommandOption(content, hint) {
 	this.content = content;
 	this.hint = hint;
 	this.valueRequired = false;
 	this.canCombine = true;
 };
+function CmdMessage(data, color) {
+	this.data = data
+	if (!color) {
+		this.color = "white"
+	}
+	else {
+		this.color = color
+	}
+}
 function CmdDisplayTable(columnCount) {
 	this.columnCount = columnCount;
 	this.withBorder = false;
@@ -177,6 +225,7 @@ CmdDisplayTable.prototype = {
 		this.trs.push(tds);
 	}
 };
+CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 (function( $ ) { 
     $.cmdConsole = function(options, $consoleDiv) {
     	this.settings = $.extend({
@@ -186,8 +235,9 @@ CmdDisplayTable.prototype = {
     	this.$consoleDiv = $consoleDiv;
     	this.consoleDiv = $consoleDiv[0];
     	this.commandHistory = [];
-    	this.registeredCommands = [];
-    	this.dataForDisplay = [];
+    	this.registeredCommands = {};
+    	this.registeredApplications = {};
+    	this.activeApplication = null;
     	this.currentCommandIndex = -1;
     	this.clipboard = undefined;
     	this.$currentInput = undefined;
@@ -195,6 +245,9 @@ CmdDisplayTable.prototype = {
     };
     $.extend($.cmdConsole, {
     	prototype: {
+    		commandCompleteEventName: "cmd_console_command_complete",
+    		displayMessageEventName: "cmd_console_display_message",
+    		applicationCompleteEventName: "cmd_console_application_complete",
     		utils: {
     			moveCursorToEnd: function(contentEditableElement) {
     			    var range,selection;
@@ -236,96 +289,97 @@ CmdDisplayTable.prototype = {
     		},
 			onEnter: function(ele, event) {
 				var inputStr = $.trim(this.$currentInput.text());
-				this.thinking();
 				var cmdConsole = this;
-				this.processCommand(inputStr, function() {
-					var commandStr = inputStr;
-					var hasOption = false;
-					if (inputStr.indexOf(" ") >= 0) {
-						commandStr = inputStr.substr(0, inputStr.indexOf(" "));
-						var optionStr = inputStr.substr(inputStr.indexOf(" "));
-						hasOption = true;
+				try {
+					if (this.isApplicationRunning()) {
+						this.activeApplication.currentHandler.call(this.activeApplication, inputStr);
 					}
-					var command = cmdConsole.registeredCommands[commandStr];
-					try {
-						if (!command) throw "Command " + commandStr + " is not supported.";
-						var result;
-						if (hasOption) {
-							var data = command.analyzeCommand(optionStr);
-							result = command.execute(data) + "";
-						}
-						else {
-							if (command.valueRequired) {
-								throw "Value is required";
-							}
-							result = command.execute();
-						}
-						if (result) cmdConsole._addDisplayMessage(real_dump(result), "green");
+					else {
+						this.thinking();
+						this.processCommand(inputStr);
 					}
-					catch(e) {
-						if (e == "help") {
-							cmdConsole._addDisplayMessage(command.toDisplayData());
-						}
-						else {
-							cmdConsole._addDisplayMessage(e, "red");
-						}
+				}
+				catch (e) {
+					var message = null;
+					if (e == "help") {
+						message = new CmdMessage(command.toDisplayData());
 					}
-					cmdConsole.displayMessage();
-					cmdConsole.startNewInput();
-					cmdConsole.logCommand(inputStr);					
-				});
+					else {
+						message = new CmdMessage(e.toString(), "red");
+					}
+					this.$consoleDiv.trigger(this.commandCompleteEventName, message);
+				}
 			},
 			onTab: function(ele, event) {
+				if (this.isApplicationRunning()) return;
 				var inputStr = $.trim(this.$currentInput.text());
-				var message = "";
+				var cmdMessage = "";
 				var count = 0;
 				var lastMatchedCmd = undefined;
 				for (var cmd in this.registeredCommands) {
-					if (!inputStr || cmd.indexOf(inputStr) == 0) {
-						if (message) message += "\n";
-						message += cmd;
+					if (!inputStr || cmd.toLowerCase().indexOf(inputStr.toLowerCase()) == 0) {
+						if (cmdMessage) cmdMessage += "\n";
+						cmdMessage += cmd;
 						count++;
 						lastMatchedCmd = cmd;
 					}
 				}
-				if (count == 0) message = "none";
+				var applicationMsg = "";
+				for (var cmd in this.registeredApplications) {
+					if (!inputStr || cmd.toLowerCase().indexOf(inputStr.toLowerCase()) == 0) {
+						if (applicationMsg) applicationMsg += "\n";
+						applicationMsg += cmd;
+						count++;
+						lastMatchedCmd = cmd;
+					}
+				}
 				if (count == 1) {
 					this._replaceCommand(lastMatchedCmd);
 					return;
 				}
-				this._addDisplayMessage(message, "green");
-				this.displayMessage();
+				if (count == 0) this.displayMessage(new CmdMessage("none", "green"));
+				else if (cmdMessage && applicationMsg) {
+					this.displayMessage(new CmdMessage("Commands:", "orange"));
+					this.displayMessage(new CmdMessage(cmdMessage, "green"));
+					this.displayMessage(new CmdMessage("Applications:", "orange"));
+					this.displayMessage(new CmdMessage(applicationMsg, "green"));
+				}
+				else {
+					this.displayMessage(new CmdMessage(cmdMessage + applicationMsg, "green"));
+				}
 				this.startNewInput();
 				this._replaceCommand(inputStr);
+			},
+			onExecuteComplete: function(event, message) {
+				if (message) this.displayMessage(message);
+				this.startNewInput();
+			},
+			onApplicationComplete: function(event, message) {
+				if (message) this.displayMessage(message);
+				this._stopApplication();
+				this.startNewInput();
 			},
 			startNewInput: function() {
     			var $inputBlock = $('<div class="cmd_console_block cmd_console_block_input cmd_console_line"></div>');
     			this.$consoleDiv.append($inputBlock);
-    			$inputBlock.append('<span class="cmd_console_arrow">&gt;</span>');
+    			if (!this.isApplicationRunning()) $inputBlock.append('<span class="cmd_console_arrow">&gt;</span>');
     			var $cmdConsoleInput = $('<span contenteditable="true" spellcheck="false" class="cmd_console_input"></span>');
     			this.$currentInput = $cmdConsoleInput;
     			$inputBlock.append($cmdConsoleInput);
     			$cmdConsoleInput.focus();
-    			this._clearDisplayData();
 			},
-    		displayMessage: function() {
+    		displayMessage: function(message) {
     			var $cmdConsoleBlockResult = $('<div class="cmd_console_block cmd_console_block_result"></div>');
     			this.$consoleDiv.append($cmdConsoleBlockResult);
-    			for (var color in this.dataForDisplay) {
-    				var colorDisplayData = this.dataForDisplay[color];
-    				for (var j in colorDisplayData) {
-    					var data = colorDisplayData[j];
-    	    			var colorClass = "cmd_console_text_" + color;
-    					if (typeof(data) == "object") {
-    						if (data.constructor.name == "CmdDisplayTable")
-    							this._generateTableResult($cmdConsoleBlockResult, data, colorClass);
-    					}
-    					else {
-        					this._generateLineResult($cmdConsoleBlockResult, data, colorClass);
-    					}
-    				}
-    			}
-    			this._clearDisplayData();
+    			var colorClass = "cmd_console_text_" + message.color;
+    			var data = message.data;
+				if (typeof(data) == "object") {
+					if (data.constructor.name == "CmdDisplayTable")
+						this._generateTableResult($cmdConsoleBlockResult, data, colorClass);
+				}
+				else {
+					this._generateLineResult($cmdConsoleBlockResult, data, colorClass);
+				}
     		},
     		_enterCommand: function(command) {
 				var currentText = this.$currentInput.text();
@@ -356,45 +410,72 @@ CmdDisplayTable.prototype = {
     			$container.append($table);
     		},
     		_generateLineResult: function($container, data, colorClass) {
+    			data = data + "";
     			var resultLines = data.split("\n");
     			for (var i in resultLines) {
     				$container.append('<span class="cmd_console_line ' + colorClass + '">' + resultLines[i] + '</span>');
     			}
     		},
-    		_clearDisplayData: function(color) {
-    			if (color) delete this.dataForDisplay[color];
-    			else this.dataForDisplay = [];
+    		_startApplication: function(application, optionStr) {
+    			this.activeApplication = application;
+    			application.start(optionStr);
     		},
-    		_addDisplayMessage: function(message, color) {
-    			if (!color) color = "white";
-    			if (!this.dataForDisplay[color]) this.dataForDisplay[color] = [];
-    			if (!$.isArray(message))
-    				this.dataForDisplay[color].push(message);
-    			else {
-    				for (var i in message) {
-        				this.dataForDisplay[color].push(message[i]);
-    				}
-    			}
+    		_stopApplication: function() {
+    			this.activeApplication = null;
+    		},
+    		isApplicationRunning: function() {
+    			if (this.activeApplication) return true;
+    			return false;
     		},
     		thinking: function() {
     			this.$currentInput.removeAttr("contenteditable");
     			this.$currentInput = undefined;
-    			this._addDisplayMessage("Thinking, please wait...", "gray");
+    			this.displayMessage(new CmdMessage("Thinking, please wait...", "gray"));
     		},
-    		processCommand: function(command, callback) {
-    			callback.call();
+    		processCommand: function(inputStr) {
+				var commandStr = inputStr;
+				var hasOption = false;
+				if (inputStr.indexOf(" ") >= 0) {
+					commandStr = inputStr.substr(0, inputStr.indexOf(" "));
+					var optionStr = inputStr.substr(inputStr.indexOf(" "));
+					hasOption = true;
+				}
+				this.logCommand(inputStr);
+				var command = this.registeredCommands[commandStr];
+				if (command) {
+					if (hasOption) {
+						var data = command.analyzeCommand(optionStr);
+						command.execute(data);
+					}
+					else {
+						command.execute();
+					}
+				}
+				else if (this.registeredApplications[commandStr]){
+					if (hasOption) {
+						this._startApplication(this.registeredApplications[commandStr], optionStr)
+					}
+					else {
+						this._startApplication(this.registeredApplications[commandStr])
+					}
+				}
+				else {
+					throw "Command " + commandStr + " is not supported.";
+				}
     		},
     		logCommand: function(command) {
     			this.commandHistory.push(command);
     			this.currentCommandIndex = this.commandHistory.length;
     		},
     		showNextCommand: function() {
+    			if (this.isApplicationRunning()) return;
     			if (this.currentCommandIndex < 0) return;
     			if (this.currentCommandIndex >= this.commandHistory.length - 1) return;
     			this.currentCommandIndex ++;
     			this._replaceCommand(this.commandHistory[this.currentCommandIndex]);
     		},
     		showPrevCommand: function() {
+    			if (this.isApplicationRunning()) return;
     			if (this.currentCommandIndex < 0) return;
     			if (this.currentCommandIndex == 0) return;
     			this.currentCommandIndex --;
@@ -408,6 +489,9 @@ CmdDisplayTable.prototype = {
     		},
     		registerCommand: function(cmd) {
     			this.registeredCommands[cmd.content] = cmd;
+    		},
+    		registerApplication: function(app) {
+    			this.registeredApplications[app.name] = app;
     		},
     		_initConsoleByHtmlInsertion: function() {
     			this.$consoleDiv.addClass("cmd_console");
@@ -443,6 +527,15 @@ CmdDisplayTable.prototype = {
     					cmdConsole.onTab(this, event);
     				}
     			});
+    			$(document).on(this.commandCompleteEventName, function(event, message) {
+    				cmdConsole.onExecuteComplete(event, message)
+    			});
+    			$(document).on(this.displayMessageEventName, function(event, message) {
+    				cmdConsole.displayMessage(message);
+    			});
+    			$(document).on(this.applicationCompleteEventName, function(event, message) {
+    				cmdConsole.onApplicationComplete(event, message)
+    			})
     			if (this.settings.rightPaste) {
         			this.$consoleDiv.mouseup(function(event) {
         				//left mouse click
@@ -467,33 +560,33 @@ CmdDisplayTable.prototype = {
     		_clearCommand: function() {
     			var cmd = new Command("clear", "Clear all messages on the screen");
     			var cmdConsole = this;
-    			cmd.execute = function() {
-    				cmdConsole._clearDisplayData();
+    			cmd.executeImpl = function() {
     				cmdConsole.$consoleDiv.find(".cmd_console_block").remove();
+    				this.end();
     			};
     			return cmd;
     		},
     		_helpCommand: function() {
     			var cmd = new Command("help", "help");
-    			cmd.execute = function() {
-    				return "Hello world!";
+    			cmd.executeImpl = function() {
+    				this.end(new CmdMessage("Hello world!", "green"));
     			}
     			return cmd;
     		},
     		_getRGBCommand: function() {
     			var cmd = new Command("rgb", "input hexformat color, e.g. #00FF00, get rgb format color");
     			cmd.valueRequired = true;
-    			cmd.execute = function(data) {
+    			cmd.executeImpl = function(data) {
     				var value = data[0]["value"][0];
     				var matches = value.match(/^#?([0-9a-fA-F]{6})$/);
     				if (!matches) {
     					throw "You must input a hexformat color, e.g. #00FF00 or 00FF00";
     				}
     				var hexString = matches[1];
-    				return "rgb("
+    				this.end(new CmdMessage("rgb("
     						+ parseInt("0x" + hexString.substr(0, 2)) + ","
     						+ parseInt("0x" + hexString.substr(2, 2)) + ","
-    						+ parseInt("0x" + hexString.substr(4, 2)) + ")";
+    						+ parseInt("0x" + hexString.substr(4, 2)) + ")", "green"));
     			}
     			return cmd;
     		},
@@ -501,7 +594,7 @@ CmdDisplayTable.prototype = {
     			var help = "input rgb format color, e.g. rgb(0,255,0) or (0,255,0) or 0,255,0 \nWarning: no space is allowed";
     			var cmd = new Command("hexColor", help);
     			cmd.valueRequired = true;
-    			cmd.execute = function(data) {
+    			cmd.executeImpl = function(data) {
     				var value = data[0]["value"][0];
     				var matches = value.match(/^\(?([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5]),([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5]),([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\)?$/);
     				if (!matches) {
@@ -512,7 +605,7 @@ CmdDisplayTable.prototype = {
     					if (hexStr.length == 1) hexStr = "0" + hexStr;
     					return hexStr.toUpperCase();
     				}
-    				return "#" + toToDigitsHex(matches[1]) + toToDigitsHex(matches[2]) + toToDigitsHex(matches[3]);
+    				this.end(new CmdMessage("#" + toToDigitsHex(matches[1]) + toToDigitsHex(matches[2]) + toToDigitsHex(matches[3]), "green"));
     			}
     			return cmd;
     		}

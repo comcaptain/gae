@@ -28,13 +28,16 @@
 }
 .cmd_console_line {
 	padding: 5px 0;
-	line-height: 10px;
-	height: 10px;
+	line-height: 13px;
+	height: 12px;
 	display: block;
 	white-space: pre;
 }
 	.cmd_console_line.narrow {
 		padding: 3px 0;
+	}
+	.cmd_console_line > * {
+		height: 12px;
 	}
 .cmd_console_text_orange {
 	color: #e67e22;

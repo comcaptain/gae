@@ -25,3 +25,51 @@ $(document).ready(function() {
 //    });
 	paper.path("M 10 10 l -5 0 l 5 0 l 0 30 l -5 0 l 5 0 l 0 30 l -5 0 l 5 0 l 0 30 l -5 0 l 5 0 l 0 30 l -5 0 l 5 0 l 0 30 l -5 0 l 5 0 l 0 30");
 });
+function MyString(str) {
+	for (var i = 0; i < str.length; i++) {
+		this[i] = str[i];
+	}
+	this.length = str.length;
+	this.toString = function() {return str;}
+	this.valueOf = this.toString;
+	this.charAt = function (i) {
+		i = parseInt(i);
+		if (isNaN(i)) return this[0];
+		if (i < 0 || i >= this.length) {
+			return "";
+		}
+		return this[i];
+	};
+	this.concat = function(nextPart) {
+		return str + nextPart;
+	};
+	this.slice = function(start, end) {
+		if (end < 0) end = this.length + end;
+		if (end > this.length) end = this.length;
+		if (start < 0 || end <= start) return "";
+		var result = "";
+		for (var i = start; i < end; i++) {
+			result += this[i];
+		}
+		return result;
+	};
+	this.split = function(seperator) {
+		var parts = [];
+		var lastIndex = 0;
+		var myString = this;
+		str.replace(new RegExp(seperator, "g"), function() {
+			var index = arguments[1];
+			parts.push(myString.slice(lastIndex, index));
+			lastIndex = index + 1;
+		});
+		parts.push(this.slice(lastIndex, s.length));
+		return parts;
+	}
+	this.reverse = function() {
+		var result = "";
+		for (var i = this.length - 1; i >= 0; i--) {
+			result += this[i];
+		}
+		return result;
+	};
+}
