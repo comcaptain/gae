@@ -23,6 +23,10 @@ public class Word {
 	private String remark;
 	@Persistent
 	private WordSet wordSet;
+	@Persistent
+	private int lessonNo;
+	@Persistent
+	private String type;
 	public String getWordId() {
 		return wordId;
 	}
@@ -59,7 +63,19 @@ public class Word {
 	public void setWordSet(WordSet wordSet) {
 		this.wordSet = wordSet;
 	}
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
+	public int getLessonNo() {
+		return lessonNo;
+	}
+	public void setLessonNo(int lessonNo) {
+		this.lessonNo = lessonNo;
+	}
 	public String toString() {
-		return chinese + " " + hiragana + " " + japanese + " " + remark;
+		return this.chinese + " " + this.hiragana + " " + this.japanese + " " + this.lessonNo + " " + this.type + " " + this.remark;
 	}
 }

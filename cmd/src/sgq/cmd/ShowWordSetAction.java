@@ -24,10 +24,14 @@ public class ShowWordSetAction extends ActionSupport {
 		Query query = pm.newQuery(WordSet.class);
 		@SuppressWarnings("unchecked")
 		List<WordSet> wordSets = (List<WordSet>) query.execute();
-		WordSet wordSet = wordSets.get(0);
 		result = "";
-		result += "word set: " + wordSet.getName() + "\n";
-		result += "word: " + wordSet.getWords().toArray(new Word[0])[0].toString();
+		for (WordSet wordSet: wordSets) {
+			result += "wordset " + wordSet.getName();
+			if (wordSet.getWords() != null) {
+				result += ": total " + wordSet.getWords().size();
+			}
+			result += "<br>";
+		}
 		pm.close();
 		return SUCCESS;
 	}

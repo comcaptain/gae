@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.jdo.annotations.Element;
-import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
@@ -15,8 +14,7 @@ import javax.jdo.annotations.PrimaryKey;
 public class WordSet {
 	@PrimaryKey
 	@Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-	@Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
-	private String wordSetId;
+	private Long wordSetId;
 	@Persistent
 	private String name;
 	@Persistent
@@ -24,10 +22,10 @@ public class WordSet {
 	@Persistent(mappedBy = "wordSet")
 	@Element(dependent = "true")
 	private Set<Word> words = new HashSet<Word>();
-	public String getWordSetId() {
+	public Long getWordSetId() {
 		return wordSetId;
 	}
-	public void setWordSetId(String wordSetId) {
+	public void setWordSetId(Long wordSetId) {
 		this.wordSetId = wordSetId;
 	}
 	public String getName() {
