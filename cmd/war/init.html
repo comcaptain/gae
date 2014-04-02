@@ -39,7 +39,7 @@
 					url: "show",
 					success: function(data) {
 						console.log(data);
-						if (step <= limit) $("#test").removeAttr("disabled");
+						if (step <= limit) initByStep(); else $("#test").removeAttr("disabled");
 					}
 				});
 				
