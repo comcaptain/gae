@@ -46,7 +46,7 @@ public class InitWordSetAction extends ActionSupport {
 		List<Map<String, Object>> words = mapper.readValue(new File("words.json"), List.class);
 		Iterator<Map<String, Object>> iterator = words.iterator();
 		int count = 0;
-		int k = 500;
+		int k = 200;
 		try {
 			while(iterator.hasNext()) {
 				count ++;

@@ -14,22 +14,40 @@
 		<style type="text/css">
 		</style>
 		<script src="http://code.jquery.com/jquery-1.10.2.min.js" ></script>
-		<script src="js/cmd.js" ></script>
-		<script src="js/jpLearner.js" ></script>
 		<script type="text/javascript">
-			$(document).ready(function() {
-				var cmdObj = $("body").cmdConsole({rightPaste: false});
-				var cmd = new Command("cal", "cal [expression], calculate, use javascript grammar");
-				cmd.valueRequired = true;
-				cmd.executeImpl = function(data) {
-					this.end(new CmdMessage(eval(data[0]["value"][0]), "green"));
-				};
-				cmdObj.registerCommand(cmd);
-				cmdObj.registerApplication(new JPLearner());
-			});
+			step = 1
+			limit = 11
+			function initByStep() {
+				$("#test").attr("disabled", "disabled")
+				if (step > limit) return;
+				$.ajax({
+					cache: false,
+					url: "init",
+					data: {
+						step: step
+					},
+					success: function(data) {
+						console.log(data);
+						showData();
+						step++
+					}
+				});
+			}
+			function showData() {
+				$.ajax({
+					cache: false,
+					url: "show",
+					success: function(data) {
+						console.log(data);
+						if (step <= limit) $("#test").removeAttr("disabled");
+					}
+				});
+				
+			}
 		</script>
 	</head>
 
 	<body>
+		<button id="test" onclick="javascript: initByStep();">start</button>
 	</body>
 </html>
