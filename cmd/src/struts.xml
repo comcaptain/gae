@@ -17,7 +17,7 @@
 			<result name="input">/input.jsp</result>
 			<result name="success">/HelloWorld.jsp</result>
 		</action>
-		<action name="init" 
+<!-- 		<action name="init" 
             class="sgq.cmd.InitWordSetAction" 
             method="execute">
 			<result name="success">/HelloWorld.jsp</result>
@@ -26,6 +26,6 @@
             class="sgq.cmd.ShowWordSetAction" 
             method="execute">
 			<result name="success">/HelloWorld.jsp</result>
-		</action>
+		</action> -->
 	</package>
 </struts>
