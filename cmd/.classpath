@@ -28,5 +28,6 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/jackson-annotations-2.3.2.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/jackson-core-2.3.2.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/jackson-databind-2.3.2.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/struts2-json-plugin-2.3.16.1.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>

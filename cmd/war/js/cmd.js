@@ -34,17 +34,24 @@ function Application() {
 		this.end(new CmdMessage(value + "\nexited", "orange"));
 	};
 	this.start = function(optionStr) {
-		this.next(new CmdMessage(this.name + " started\n" + this.welcome, "orange"), this.main)
+		this.displayMessage(new CmdMessage(this.name + " started\n" + this.welcome, "orange"))
+		this.main.call(this, optionStr);
 	};
 }
 Application.prototype = {
+	wrapMessage: function(strMessage) {
+		return new CmdMessage(strMessage, "green")
+	},
 	displayMessage: function(message) {
+		if (typeof message == "string") message = this.wrapMessage(message);
 		$(document).trigger($.cmdConsole.prototype.displayMessageEventName, message);
 	},
 	end: function(message) {
+		if (typeof message == "string") message = this.wrapMessage(message);
 		$(document).trigger($.cmdConsole.prototype.applicationCompleteEventName, message);
 	},
 	next: function(message, nextHandler) {
+		if (typeof message == "string") message = this.wrapMessage(message);
 		this.currentHandler = nextHandler;
 		$(document).trigger($.cmdConsole.prototype.commandCompleteEventName, message);
 	}
