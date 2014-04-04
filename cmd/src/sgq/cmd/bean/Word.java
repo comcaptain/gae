@@ -18,7 +18,7 @@ public class Word {
 	@Persistent
 	private String chinese;
 	@Persistent
-	private String japanese;
+	private String kanji;
 	@Persistent
 	private String remark;
 	@Persistent
@@ -45,11 +45,11 @@ public class Word {
 	public void setChinese(String chinese) {
 		this.chinese = chinese;
 	}
-	public String getJapanese() {
-		return japanese;
+	public String getKanji() {
+		return kanji;
 	}
-	public void setJapanese(String japanese) {
-		this.japanese = japanese;
+	public void setKanji(String kanji) {
+		this.kanji = kanji;
 	}
 	public String getRemark() {
 		return remark;
@@ -76,6 +76,6 @@ public class Word {
 		this.lessonNo = lessonNo;
 	}
 	public String toString() {
-		return this.chinese + " " + this.hiragana + " " + this.japanese + " " + this.lessonNo + " " + this.type + " " + this.remark;
+		return this.chinese + " " + this.hiragana + " " + this.kanji + " " + this.lessonNo + " " + this.type + " " + this.remark;
 	}
 }

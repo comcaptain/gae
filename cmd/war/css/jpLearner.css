@@ -1,0 +1,9 @@
+.statusArea {
+	position: fixed;
+	top: 22px;
+	right: 12px;
+}
+.status {
+	color: #2ecc71;
+	font-size: 30px;
+}

@@ -55,7 +55,7 @@ public class InitWordSetAction extends ActionSupport {
 				Word word = new Word();
 				word.setChinese((String) wordData.get("chinese"));
 				word.setHiragana((String)wordData.get("hiragana"));
-				word.setJapanese((String) wordData.get("japanese"));
+				word.setKanji((String) wordData.get("kanji"));
 				word.setType((String) wordData.get("type"));
 				word.setLessonNo((int) wordData.get("lessonNo"));
 				wordSet.addWord(word);

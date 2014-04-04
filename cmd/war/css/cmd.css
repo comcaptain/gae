@@ -4,6 +4,7 @@
 	color: white;
 	background: black;
 	padding: 22px 12px;
+	margin: 0;
 	overflow-y: auto;
 }
 .cmd_console_table {

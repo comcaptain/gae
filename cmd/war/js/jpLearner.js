@@ -2,24 +2,32 @@ function JPLearner() {
 	this.name = "JPLearner";
 	this.welcome = "This is a japanese language learning app.\nようこそ！";
 	this.wordSet = null;
-	this.lessonList = [];
 	this.chosenLessons = [];
+	this.chosenWords = [];
 	this.words = [];
+	this.chineseVisible = false;
+	this.hiraganaVisible = false;
+	this.kanjiVisible = false;
+	this.currentWord = null;
 }
 JPLearner.prototype = new Application();
 $.extend(JPLearner.prototype, {
-	loadLessonList: function() {
-		this.lessonList = [];
+	organizeWordsByLesson: function() {
+		lessonOrganizedList = [];
 		for (var i in this.words) {
 			var word = this.words[i];
 			var lessonNo = word["lessonNo"];
-			if (this.lessonList[lessonNo]) {
-				this.lessonList[lessonNo] ++;
+			if (typeof lessonOrganizedList[lessonNo] != "undefined") {
+				lessonOrganizedList[lessonNo].push(word)
 			}
 			else {
-				this.lessonList[lessonNo] = 1;
+				lessonOrganizedList[lessonNo] = [word];
 			}
 		}
+		this.words = lessonOrganizedList;
+	},
+	showWords: function(showAll, words) {
+		
 	},
 	executeServerAction: function(action, params, callback) {
 		var jpLearner = this;
@@ -54,22 +62,31 @@ $.extend(JPLearner.prototype, {
 		if (!wordSet) throw "Invalid word set id, please enter again:";
 		this.executeServerAction("retrieveWordList", {wordSetId: wordSet["wordSetId"]}, function(data) {
 			this.words = data;
-			this.loadLessonList();
+			this.organizeWordsByLesson();
 			this.displayMessage(new CmdMessage("WordSet " + this.wordSet["name"] + " has been loaded.\n" + 
 					"There're " + this.words.length + " words in this wordSet.", "green"));
-			this.next("You can choose any lessons in 1-" + (this.lessonList.length - 1) + ", e.g. 1 2 7-8", this.selectLessons);
+			this.next("You can choose any lessons in 1-" + (this.words.length - 1) + ", e.g. 1 2 7-8", this.selectLessons);
 		})
 	},
 	selectLessons: function(optionStr) {
 		var lessonParts = optionStr.trim().split(/\s+/);
 		try {
 			this.chosenLessons = [];
+			this.chosenWords = [];
+			var duplicate = {};
 			for (var i in lessonParts) {
 				var lessonPart = lessonParts[i];
 				if (/^\d+$/.test(lessonPart)) {
 					var lesson = parseInt(lessonPart);
-					if (this.lessonList[lesson]) {
+					if (this.words[lesson]) {
+						if (typeof duplicate[lesson] == "undefined") {
+							duplicate[lesson] = 1;
+						}
+						else {
+							continue;
+						}
 						this.chosenLessons.push(lesson);
+						this.chosenWords = this.chosenWords.concat(this.words[lesson]);
 					}
 				}
 				else {
@@ -81,8 +98,15 @@ $.extend(JPLearner.prototype, {
 						throw "error";
 					}
 					for (var lesson = start; lesson <= end; lesson++) {
-						if (this.lessonList[lesson]) {
-							this.chosenLessons.push(lesson)
+						if (this.words[lesson]) {
+							if (typeof duplicate[lesson] == "undefined") {
+								duplicate[lesson] = 1;
+							}
+							else {
+								continue;
+							}
+							this.chosenLessons.push(lesson);
+							this.chosenWords = this.chosenWords.concat(this.words[lesson]);
 						}
 					}
 				}
@@ -92,7 +116,20 @@ $.extend(JPLearner.prototype, {
 		catch(e) {
 			throw "Invalid lesson list, please enter again:"
 		}
-		this.end(this.chosenLessons.toString());
+		this.displayMessage(this.chosenLessons.length + " lesson(s) and " + this.chosenWords.length + " word(s) have been selected.");
+		this.next("Please choose the visible word parts: c(Chinese中国語) h(hiragana平仮名) kanji(kanji漢字)," + 
+				" e.g. ch, means only show Chinese and hiragana",this.selectVisibleParts);
+	},
+	selectVisibleParts: function(optionStr) {
+		optionStr = optionStr.replace(/\s/g, "");
+		if (!/^[chk]+$/.test(optionStr)) throw "Invalid, please enter again:";
+		if (optionStr.search("c") >= 0) this.chineseVisible = true;
+		if (optionStr.search("h") >= 0) this.hiraganaVisible = true;
+		if (optionStr.search("k") >= 0) this.kanjiVisible = true;
+		this.next("", this.startLearning);
+	},
+	startLearning: function(optionStr) {
+		
 	}
 });
 JPLearner.prototype.constructor = JPLearner;
