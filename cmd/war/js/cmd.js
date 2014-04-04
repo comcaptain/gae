@@ -298,11 +298,11 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 				var inputStr = $.trim(this.$currentInput.text());
 				var cmdConsole = this;
 				try {
+					this.thinking();
 					if (this.isApplicationRunning()) {
 						this.activeApplication.currentHandler.call(this.activeApplication, inputStr);
 					}
 					else {
-						this.thinking();
 						this.processCommand(inputStr);
 					}
 				}
@@ -428,6 +428,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     			application.start(optionStr);
     		},
     		_stopApplication: function() {
+    			this.displayMessage(new CmdMessage(this.activeApplication.name + " exited.", "orange"));
     			this.activeApplication = null;
     		},
     		isApplicationRunning: function() {

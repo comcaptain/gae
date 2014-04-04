@@ -31,8 +31,14 @@
 	<package name="ajax" namespace="/ajax" extends="json-default">
 		<action name = "retrieveWordSetList" class="sgq.cmd.action.WordSetAction" method = "retrieveWordSetList">
 		    <result name="success" type="json">
-		        <param name="excludeProperties">words</param>
+		        <param name="excludeProperties">\.words</param>
 		        <param name="root">wordSetList</param>
+		    </result>
+		</action>
+		<action name = "retrieveWordList" class="sgq.cmd.action.WordSetAction" method = "retrieveWordList">
+		    <result name="success" type="json">>
+		        <param name="excludeProperties">\[\d+\]\.wordSet</param>
+		        <param name="root">wordList</param>
 		    </result>
 		</action>
 	</package>
