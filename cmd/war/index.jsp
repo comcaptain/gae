@@ -18,8 +18,9 @@
 		<script src="js/cmd.js" ></script>
 		<script src="js/jpLearner.js" ></script>
 		<script type="text/javascript">
+			var cmdObj;
 			$(document).ready(function() {
-				var cmdObj = $("body").cmdConsole({rightPaste: false});
+				cmdObj = $("body").cmdConsole({rightPaste: false});
 				var cmd = new Command("cal", "cal [expression], calculate, use javascript grammar");
 				cmd.valueRequired = true;
 				cmd.executeImpl = function(data) {
@@ -32,22 +33,5 @@
 	</head>
 
 	<body>
-		<div class="statusArea">
-			<div class="status">
-				<label>Elapsed</label><span>3:22</span>
-			</div>
-			<div class="status">
-				<label>Remaining</label><span>30:22</span>
-			</div>
-			<div class="status">
-				<label>Speed</label><span>22s/word</span>
-			</div>
-			<div class="status">
-				<label>Word</label><span class="already">22/<span class="total">100</span></span>
-			</div>
-			<div class="status">
-				<label>Remaining</label><span>30:22</span>
-			</div>
-		</div>
 	</body>
 </html>

@@ -27,6 +27,7 @@ function dump(v) {
 }
 
 function Application() {
+	this.console = null;
 	this.currentHandler = null;
 	this.name = "app";
 	this.welcome = "Hello, I'm app."
@@ -39,21 +40,27 @@ function Application() {
 	};
 }
 Application.prototype = {
+	registerConsole: function(console) {
+		this.console = console;
+	},
 	wrapMessage: function(strMessage) {
 		return new CmdMessage(strMessage, "green")
 	},
 	displayMessage: function(message) {
 		if (typeof message == "string") message = this.wrapMessage(message);
-		$(document).trigger($.cmdConsole.prototype.displayMessageEventName, message);
+		this.console.displayMessage(message);
 	},
 	end: function(message) {
 		if (typeof message == "string") message = this.wrapMessage(message);
-		$(document).trigger($.cmdConsole.prototype.applicationCompleteEventName, message);
+		this.console.onApplicationComplete(message);
 	},
 	next: function(message, nextHandler) {
 		if (typeof message == "string") message = this.wrapMessage(message);
 		this.currentHandler = nextHandler;
-		$(document).trigger($.cmdConsole.prototype.commandCompleteEventName, message);
+		this.console.onExecuteComplete(message);
+	},
+	setApplicationCommands: function(cmds) {
+		this.console.setApplicationCommands(cmds);
 	}
 };
 Application.prototype.constructor = Application;
@@ -62,11 +69,15 @@ function Command(content, hint) {
 	this.hint = hint;
 	this.valueRequired = false;
 	this.options = [];
+	this.console = null;
 }
 Command.prototype = {
 	name: "CmdConsoleCommand",
 	addOption: function(option) {
 		this.options[option.content] = option;
+	},
+	registerConsole: function(console) {
+		this.console = console;
 	},
 	toDisplayData: function() {
 		var data = new CmdDisplayTable(4);
@@ -199,10 +210,10 @@ Command.prototype = {
 		this.executeImpl(data)
 	},
 	end: function(message) {
-		$(document).trigger($.cmdConsole.prototype.commandCompleteEventName, message);
+		this.console.onExecuteComplete(message);
 	},
 	displayMessage: function(message) {
-		$(document).trigger($.cmdConsole.prototype.displayMessageEventName, message);
+		this.console.displayMessage(message);
 	}
 }
 Command.prototype.constructor = Command;
@@ -223,7 +234,7 @@ function CmdMessage(data, color) {
 }
 function CmdDisplayTable(columnCount) {
 	this.columnCount = columnCount;
-	this.withBorder = false;
+	this.withBorder = true;
 	this.trs = [];
 };
 CmdDisplayTable.prototype = {
@@ -244,6 +255,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     	this.commandHistory = [];
     	this.registeredCommands = {};
     	this.registeredApplications = {};
+    	this.registeredApplicationCommands = {};
     	this.activeApplication = null;
     	this.currentCommandIndex = -1;
     	this.clipboard = undefined;
@@ -252,9 +264,6 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     };
     $.extend($.cmdConsole, {
     	prototype: {
-    		commandCompleteEventName: "cmd_console_command_complete",
-    		displayMessageEventName: "cmd_console_display_message",
-    		applicationCompleteEventName: "cmd_console_application_complete",
     		utils: {
     			moveCursorToEnd: function(contentEditableElement) {
     			    var range,selection;
@@ -299,7 +308,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 				var cmdConsole = this;
 				try {
 					this.thinking();
-					if (this.isApplicationRunning()) {
+					if (this.isApplicationRunning() && !this.isApplicationCommandRegistered()) {
 						this.activeApplication.currentHandler.call(this.activeApplication, inputStr);
 					}
 					else {
@@ -314,16 +323,16 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 					else {
 						message = new CmdMessage(e.toString(), "red");
 					}
-					this.$consoleDiv.trigger(this.commandCompleteEventName, message);
+					this.onExecuteComplete(message);
 				}
 			},
 			onTab: function(ele, event) {
-				if (this.isApplicationRunning()) return;
+				if (this.isApplicationRunning() && !this.isApplicationCommandRegistered()) return;
 				var inputStr = $.trim(this.$currentInput.text());
 				var cmdMessage = "";
 				var count = 0;
 				var lastMatchedCmd = undefined;
-				for (var cmd in this.registeredCommands) {
+				for (var cmd in this.isApplicationRunning() ? this.registeredApplicationCommands : this.registeredCommands) {
 					if (!inputStr || cmd.toLowerCase().indexOf(inputStr.toLowerCase()) == 0) {
 						if (cmdMessage) cmdMessage += "\n";
 						cmdMessage += cmd;
@@ -332,12 +341,14 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 					}
 				}
 				var applicationMsg = "";
-				for (var cmd in this.registeredApplications) {
-					if (!inputStr || cmd.toLowerCase().indexOf(inputStr.toLowerCase()) == 0) {
-						if (applicationMsg) applicationMsg += "\n";
-						applicationMsg += cmd;
-						count++;
-						lastMatchedCmd = cmd;
+				if (!this.isApplicationRunning()) {
+					for (var cmd in this.registeredApplications) {
+						if (!inputStr || cmd.toLowerCase().indexOf(inputStr.toLowerCase()) == 0) {
+							if (applicationMsg) applicationMsg += "\n";
+							applicationMsg += cmd;
+							count++;
+							lastMatchedCmd = cmd;
+						}
 					}
 				}
 				if (count == 1) {
@@ -357,11 +368,11 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 				this.startNewInput();
 				this._replaceCommand(inputStr);
 			},
-			onExecuteComplete: function(event, message) {
+			onExecuteComplete: function(message) {
 				if (message) this.displayMessage(message);
 				this.startNewInput();
 			},
-			onApplicationComplete: function(event, message) {
+			onApplicationComplete: function(message) {
 				if (message) this.displayMessage(message);
 				this._stopApplication();
 				this.startNewInput();
@@ -369,8 +380,9 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 			startNewInput: function() {
     			var $inputBlock = $('<div class="cmd_console_block cmd_console_block_input cmd_console_line"></div>');
     			this.$consoleDiv.append($inputBlock);
-    			if (!this.isApplicationRunning()) $inputBlock.append('<span class="cmd_console_arrow">&gt;</span>');
+    			if (!this.isApplicationRunning() || this.isApplicationCommandRegistered()) $inputBlock.append('<span class="cmd_console_arrow">&gt;</span>');
     			var $cmdConsoleInput = $('<span contenteditable="true" spellcheck="false" class="cmd_console_input"></span>');
+    			if (this.$currentInput) this.$currentInput.removeAttr("contenteditable");
     			this.$currentInput = $cmdConsoleInput;
     			$inputBlock.append($cmdConsoleInput);
     			$cmdConsoleInput.focus();
@@ -435,6 +447,13 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     			if (this.activeApplication) return true;
     			return false;
     		},
+    		isApplicationCommandRegistered: function() {
+    			if (!this.registeredApplicationCommands) return false;
+    			for (var i in this.registeredApplicationCommands) {
+    				return true;
+    			}
+    			return false;
+    		},
     		thinking: function() {
     			this.$currentInput.removeAttr("contenteditable");
     			this.$currentInput = undefined;
@@ -449,7 +468,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 					hasOption = true;
 				}
 				this.logCommand(inputStr);
-				var command = this.registeredCommands[commandStr];
+				var command = this.isApplicationRunning() ? this.registeredApplicationCommands[commandStr] : this.registeredCommands[commandStr];
 				if (command) {
 					if (hasOption) {
 						var data = command.analyzeCommand(optionStr);
@@ -459,7 +478,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 						command.execute();
 					}
 				}
-				else if (this.registeredApplications[commandStr]){
+				else if (this.registeredApplications[commandStr] && !this.isApplicationRunning()){
 					if (hasOption) {
 						this._startApplication(this.registeredApplications[commandStr], optionStr)
 					}
@@ -496,9 +515,15 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 				if (this.settings.rightPaste) this.utils.disableRightClickMenu(this.$consoleDiv);
     		},
     		registerCommand: function(cmd) {
+    			cmd.registerConsole(this);
     			this.registeredCommands[cmd.content] = cmd;
     		},
+    		registerApplicationCommand: function(cmd) {
+    			cmd.registerConsole(this);
+    			this.registeredApplicationCommands[cmd.content] = cmd;
+    		},
     		registerApplication: function(app) {
+    			app.registerConsole(this);
     			this.registeredApplications[app.name] = app;
     		},
     		_initConsoleByHtmlInsertion: function() {
@@ -535,15 +560,6 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     					cmdConsole.onTab(this, event);
     				}
     			});
-    			$(document).on(this.commandCompleteEventName, function(event, message) {
-    				cmdConsole.onExecuteComplete(event, message)
-    			});
-    			$(document).on(this.displayMessageEventName, function(event, message) {
-    				cmdConsole.displayMessage(message);
-    			});
-    			$(document).on(this.applicationCompleteEventName, function(event, message) {
-    				cmdConsole.onApplicationComplete(event, message)
-    			})
     			if (this.settings.rightPaste) {
         			this.$consoleDiv.mouseup(function(event) {
         				//left mouse click

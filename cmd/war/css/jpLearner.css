@@ -2,8 +2,53 @@
 	position: fixed;
 	top: 22px;
 	right: 12px;
+	background: white;
+	border-radius: 5px;
+}
+.statusArea .header {
+	border-bottom: 1px solid rgb(229, 229, 229);
+	padding: 5px 10px;
+}
+.statusArea .body {
+	padding: 5px 10px;
+}
+.statusArea .header > * {
+	display: inline-block;
+}
+.statusArea .header label{
+	font-size: 17px;
+	color: rgb(48, 110, 189);
+}
+.statusArea .header button {
+	float: right;
+	background: white;
+	border: none;
+}
+button.close:hover {
+	cursor: pointer;
 }
 .status {
-	color: #2ecc71;
-	font-size: 30px;
+	color: #FF811F;
+	font-size: 15px;
+}
+.status > * {
+	display: inline-block;
+}
+.status > label {
+	width: 60px;
+}
+.status > .col2 {
+	min-width: 50px;
+}
+.status > .col3 {
+	min-width: 50px;
+}
+.draggable:active {
+	cursor: move;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }

@@ -5,6 +5,7 @@
 <struts>
 	<constant name="struts.devMode" value="true" />
 	<constant name="struts.i18n.encoding" value="UTF-8" />
+	<constant name="struts.action.excludePattern" value="/_ah/.*"/>
 	<package name="helloworld" namespace="/" extends="struts-default">
 		<action name="hello" 
             class="sgq.cmd.HelloWorldAction" 
@@ -17,11 +18,11 @@
 			<result name="input">/input.jsp</result>
 			<result name="success">/HelloWorld.jsp</result>
 		</action>
- 		<action name="init" 
+<!--  		<action name="init" 
             class="sgq.cmd.InitWordSetAction" 
             method="execute">
 			<result name="success">/HelloWorld.jsp</result>
-		</action>
+		</action> -->
 		<action name="show" 
             class="sgq.cmd.ShowWordSetAction" 
             method="execute">
