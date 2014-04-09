@@ -50,9 +50,14 @@ version 0.4 expectations:
 * 2. add force no option command
 * 3. add color format to command message 
 
-find   
-exit   doing
-pause
-all
-status
-sync
+1. find   
+2. exit   doing
+3. pause
+4. all
+5. status
+6. sync
+
+
+
+
+
