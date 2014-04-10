@@ -167,7 +167,7 @@ $.extend(JPLearner.prototype, {
 				tr.push(word["hiragana"]);
 			}
 			if (this.kanjiVisible || showAll) {
-				tr.push(word["kanji"]);
+				tr.push(word["kanji"] ? word["kanji"] : word["hiragana"]);
 			}
 			var wordHistory = this.userHistory[word.wordId];
 			if (wordHistory) {
@@ -278,8 +278,63 @@ $.extend(JPLearner.prototype, {
 			throw "Invalid lesson list, please enter again:"
 		}
 		this.displayMessage(this.chosenLessons.length + " lesson(s) and " + this.chosenWords.length + " word(s) have been selected.");
-		this.next("Please choose the visible word parts: c(Chinese中国語) h(hiragana平仮名) kanji(kanji漢字)," + 
-				" e.g. ch, means only show Chinese and hiragana",this.selectVisibleParts);
+		this._startSelectFilters();
+	},
+	calTestPassRate: function(wordId) {
+		var record = this.userHistory[wordId]
+		var rate = 0;
+		if (!record || !record.testCount) rate = 0;
+		else {
+			rate = record.testPassCount / record.testCount * 100;
+		}
+		return rate;
+	},
+	_startSelectFilters: function() {
+		var percentStatistics = [];
+		for (var i in this.chosenWords) {
+			var word = this.chosenWords[i];
+			var ratePart = parseInt(this.calTestPassRate(word.wordId) / 10);
+			if (typeof percentStatistics[ratePart] == "undefined") {
+				percentStatistics[ratePart] = 1;
+			}
+			else {
+				percentStatistics[ratePart]++;
+			}
+		}
+		var displayTable = new CmdDisplayTable();
+		for (var i in percentStatistics) {
+			if (percentStatistics[i])
+				displayTable.addTr([i * 10 + "%", percentStatistics[i]]);
+		} 
+		this.displayMessage("Please choose the test pass rate period, e.g. 30-100, means the test pass rate is between 30% and 100%");
+		this.displayMessage("The rate distribution is as below: ");
+		this.next(new CmdMessage(displayTable),this.selectFilters);
+	},
+	selectFilters: function(optionStr) {
+		var error = "Invalid period, please enter again:";
+		if (!/\d+-\d+/.test(optionStr)) throw error;
+		var parts = optionStr.split("-");
+		var start = parseInt(parts[0]);
+		var end = parseInt(parts[1]);
+		if (start > end) throw error;
+		var filtered = [];
+		for (var i in this.chosenWords) {
+			var word = this.chosenWords[i];
+			var rate = this.calTestPassRate(word.wordId);
+			if (rate >= start && rate <= end) {
+				filtered.push(word);
+			}
+		}
+		this.chosenWords = filtered;
+		if (this.chosenWords.length == 0) {
+			this.displayMessage("no word selected, please choose again");
+			this._startSelectFilters();
+		}
+		else {
+			this.displayMessage(this.chosenWords.length + " word(s) have been selected now.");
+			this.next("Please choose the visible word parts: c(Chinese中国語) h(hiragana平仮名) kanji(kanji漢字)," + 
+					" e.g. ch, means only show Chinese and hiragana",this.selectVisibleParts);
+		}
 	},
 	selectVisibleParts: function(optionStr) {
 		optionStr = optionStr.replace(/\s/g, "");
