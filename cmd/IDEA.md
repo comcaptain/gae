@@ -46,11 +46,18 @@ version 0.3 expectations:
 version 0.4 expectations:
 ===
 
-1. double quotes to group value with inner spaces
-2. add force no option command
-3. add color format to command message 
+* 1. double quotes to group value with inner spaces
+* 2. add force no option command
+* 3. add color format to command message 
+
+1. find   
+2. exit   doing
+3. pause
+4. all
+5. status
+6. sync
 
 
 
-In a CommandApp, there two types of input: command and simply value(or you can treat them as a command with the command string hidden, so we get a global variable currentDefaultCommand, and this var can only be set by an observer notification(after something is entered by end-user)), so to realize the logic flow dynamically, a collection of commands and currentDefaultCommand view.
-But in this way the logic flow is not clear, you should read into every command's code to get the exact execution flow.
+
+
