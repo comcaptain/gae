@@ -171,7 +171,7 @@ $.extend(JPLearner.prototype, {
 			}
 			var wordHistory = this.userHistory[word.wordId];
 			if (wordHistory) {
-				tr.push(wordHistory.timeSpent);
+				tr.push(this.formatTime(wordHistory.timeSpent / 1000));
 				if (wordHistory["testCount"]) {
 					var rate = wordHistory.testPassCount / wordHistory.testCount;
 					rate = parseInt(rate * 10000) / 100 + "%"
@@ -332,6 +332,7 @@ $.extend(JPLearner.prototype, {
 		var app = this;
 		var count = this.modifiedUserHistory.length;
 		if (app.modifiedUserHistory.length > 0) {
+			this.displayMessage(new CmdMessage("Synchronizing, please wait...", "gray"));
 			this.executeServerAction("synchronize",{data: JSON.stringify(this.modifiedUserHistory)}, function(data) {
 				app.modifiedUserHistory = [];
 				callback.call(app, count + " record(s) have been synchronized.");
