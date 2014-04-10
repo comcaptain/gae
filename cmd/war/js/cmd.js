@@ -268,6 +268,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     	this.currentCommandIndex = -1;
     	this.clipboard = undefined;
     	this.$currentInput = undefined;
+    	this.currentCommand = null;
     	this.init();
     };
     $.extend($.cmdConsole, {
@@ -329,7 +330,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 				catch (e) {
 					var message = null;
 					if (e == "help") {
-						message = new CmdMessage(command.toDisplayData());
+						message = new CmdMessage(this.currentCommand.toDisplayData());
 					}
 					else {
 						message = new CmdMessage(e.toString(), "red");
@@ -485,6 +486,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 				this.logCommand(inputStr);
 				var command = this.isApplicationRunning() ? this.registeredApplicationCommands[commandStr] : this.registeredCommands[commandStr];
 				if (command) {
+					this.currentCommand = command;
 					if (hasOption) {
 						var data = command.analyzeCommand(optionStr);
 						command.execute(data);
