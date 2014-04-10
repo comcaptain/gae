@@ -5,6 +5,16 @@ var dragComponentInitialX = 0;
 var dragComponentInitialY = 0;
 var $draggingEle = null;
 $(document).ready(function() {
+	$('[contenteditable]').on("focus", function(e) {
+	    window.setTimeout(function() {
+	        $(e.target).text("")
+	    }, 100);
+	});
+
+	// Code below this line is to simply reset the element with some text after clicking/tabbing away.
+	$('[contenteditable]').on("blur", function(e) {
+	    $(e.target).text("Hello")
+	});
 	$(document).mouseup(function(e) {
 		isDragging = false;
 	});
@@ -12,7 +22,7 @@ $(document).ready(function() {
 		dragMouseInitialX = e.screenX;
 		dragMouseInitialY = e.screenY;
 		dragComponentInitialX = $(this).position().left;
-		dragComponentInitialY = $(this).position().top;
+		dragComponentInitialY = parseInt($(this).css("top"));
 		isDragging = true;
 		$draggingEle = $(this);
 	});
@@ -35,6 +45,7 @@ function JPLearner() {
 	this.chosenWords = [];
 	this.words = {};
 	this.userHistory = {};
+	this.modifiedUserHistory = [];
 	this.chineseVisible = false;
 	this.hiraganaVisible = false;
 	this.kanjiVisible = false;
@@ -42,7 +53,11 @@ function JPLearner() {
 	this.currentIndex = -1;
 	this.startTime = -1;
 	this.clock = -1;
-	this.lastWordCompleteTime = -1;
+	this.lastWordCompleteTime = 0;
+	this.timeSpentInTotal = 0;
+	this.timeSpentOnCurrentWord = 0;
+	this.paused = false;
+	this.$statusBox =  null;
 }
 JPLearner.prototype = new Application();
 $.extend(JPLearner.prototype, {
@@ -60,43 +75,54 @@ $.extend(JPLearner.prototype, {
 		}
 		this.words = lessonOrganizedList;
 	},
-	updateStatusBox: function() {
+	updateStatus: function() {
 		if (!this.$statusBox) {
 			var statusBoxHtml = 
-				'<div class="statusArea draggable">                                                                             ' +
-				'	<div class="header">                                                                                        ' +
-				'		<label>STATUS</label>                                                                                   ' +
-				'		<button type="button" class="close">&times;</button>                                                    ' +
-				'	</div>                                                                                                      ' +
-				'	<div class="body">                                                                                          ' +
-				'		<div class="status">                                                                                    ' +
-				'			<label>E/R</label><span class="col2 timeElapsed">0</span><span class="col3 timeRemaining">0</span>  ' +
-				'		</div>                                                                                                  ' +
-				'		<div class="status">                                                                                    ' +
-				'			<label>Word</label><span class="col2 wordsElapsed">0</span><span class="col3 wordsInTotal">0</span> ' +
-				'		</div>                                                                                                  ' +
-				'		<div class="status">                                                                                    ' +
-				'			<label>Speed</label><span class="col2 learningSpeed">0</span><span class="col3">s/w</span>          ' +
-				'		</div>                                                                                                  ' +
-				'	</div>                                                                                                      ' +
-				'</div>                                                                                                         ';
+				'<div class="statusArea draggable">                         ' +                                                   
+				'	<div class="header">                                    ' +                                                   
+				'		<label>STATUS</label>                               ' +                                                   
+				'		<button type="button" class="close">&times;</button>' +                                                   
+				'	</div>                                                  ' +                                                   
+				'	<div class="body">                                      ' +
+				'		<table class="statusTable">                         ' +
+				'			<tr>                                            ' +
+				'				<td>E/R</td>                                ' +
+				'				<td class="timeElapsed col2">0</td>         ' +
+				'				<td class="timeRemaining col3">0</td>       ' +
+				'			</tr>                                           ' +
+				'			<tr>                                            ' +
+				'				<td>Word</td>                               ' +
+				'				<td class="wordsElapsed col2">0</td>        ' +
+				'				<td class="wordsInTotal col3"></td>         ' +
+				'			</tr>                                           ' +
+				'			<tr>                                            ' +
+				'				<td>Speed</td>                              ' +
+				'				<td class="learningSpeed col2">0</td>       ' +
+				'				<td class="col3">s/w</td>                   ' +
+				'			</tr>                                           ' +
+				'		</table>                                            ' +
+				'	</div>                                                  ' +                                                   
+				'</div>                                                     ';                                               
 			this.$statusBox = $(statusBoxHtml);
-			this.$statusBox.hide();
 			this.console.$consoleDiv.append(this.$statusBox);
 		}
-		var timeElapsed = ((new Date()).getTime() - this.startTime) / 1000;
+		if (this.paused) {
+			this.lastWordCompleteTime = (new Date()).getTime() - this.timeSpentOnCurrentWord;
+		}
+		this.timeSpentOnCurrentWord = (new Date()).getTime() - this.lastWordCompleteTime;
+		var timeElapsed = this.timeSpentInTotal + this.timeSpentOnCurrentWord;
+		timeElapsed /= 1000;
 		var wordsElapsed = this.currentIndex;
 		var wordsInTotal = this.chosenWords.length;
 		this.$statusBox.find(".timeElapsed").text(this.formatTime(timeElapsed));
 		this.$statusBox.find(".wordsInTotal").text(wordsInTotal);
 		if (wordsElapsed > 0) {
-			var speed = (this.lastWordCompleteTime - this.startTime) / 1000 / wordsElapsed;
+			var speed = (this.timeSpentInTotal) / 1000 / wordsElapsed;
 			var timeRemaining = (wordsInTotal - wordsElapsed) * speed;
 			this.$statusBox.find(".timeRemaining").text(this.formatTime(timeRemaining));
 			this.$statusBox.find(".wordsElapsed").text(wordsElapsed);
 			this.$statusBox.find(".learningSpeed").text(Math.round(speed * 100) / 100);
 		}
-		this.$statusBox.show();
 	},
 	formatTime: function(time) {
 		time = Math.round(time);
@@ -108,7 +134,13 @@ $.extend(JPLearner.prototype, {
 		hour = Math.round(time / 60);
 		return hour + ":" + min + ":" + second;
 	},
+	countMapSize: function(map) {
+		var count = 0;
+		for(var i in map) count++;
+		return count;
+	},
 	generateWordsView: function(words, showAll) {
+		if (!words || words.length == 0) return "0 word";
 		var displayTable = new CmdDisplayTable();
 		var ths = ["lesson", "type"];
 		if (this.chineseVisible || showAll) {
@@ -120,6 +152,8 @@ $.extend(JPLearner.prototype, {
 		if (this.kanjiVisible || showAll) {
 			ths.push("kanji");
 		}
+		ths.push("timeSpent");
+		ths.push("passRate");
 		displayTable.addTr(ths);
 		for (var i in words) {
 			var tr = [];
@@ -135,6 +169,15 @@ $.extend(JPLearner.prototype, {
 			if (this.kanjiVisible || showAll) {
 				tr.push(word["kanji"]);
 			}
+			var wordHistory = this.userHistory[word.wordId];
+			if (wordHistory) {
+				tr.push(wordHistory.timeSpent);
+				if (wordHistory["testCount"]) {
+					var rate = wordHistory.testPassCount / wordHistory.testCount;
+					rate = parseInt(rate * 10000) / 100 + "%"
+					tr.push(rate);
+				}
+			}
 			displayTable.addTr(tr);
 		}
 		return new CmdMessage(displayTable);
@@ -145,6 +188,7 @@ $.extend(JPLearner.prototype, {
 			cache: false,
 			url: "ajax/" + action,
 			data: params,
+			type: "post",
 			success: function(data) {
 				callback.call(jpLearner, data)
 			}
@@ -171,12 +215,19 @@ $.extend(JPLearner.prototype, {
 		this.wordSet = wordSet;
 		if (!wordSet) throw "Invalid word set id, please enter again:";
 		this.executeServerAction("retrieveWordList", {wordSetId: wordSet["wordSetId"]}, function(data) {
-			this.words = data;
+			this.words = data.wordList;
+			this.userHistory = {};
+			for (var i in data.userHistory) {
+				this.userHistory[data.userHistory[i].wordId] = data.userHistory[i];
+			}
 			this.organizeWordsByLesson();
 			this.displayMessage(new CmdMessage("WordSet " + this.wordSet["name"] + " has been loaded.\n" + 
 					"There're " + this.words.length + " words in this wordSet.", "green"));
-			this.next("You can choose any lessons in 1-" + (this.words.length - 1) + ", e.g. 1 2 7-8", this.selectLessons);
+			this._startSelectLessons();
 		})
+	},
+	_startSelectLessons: function() {
+		this.next("You can choose any lessons in 1-" + (this.words.length - 1) + ", e.g. 1 2 7-8", this.selectLessons);
 	},
 	selectLessons: function(optionStr) {
 		var lessonParts = optionStr.trim().split(/\s+/);
@@ -239,7 +290,21 @@ $.extend(JPLearner.prototype, {
 		this.resetLearningCycleData();
 		this.startLearningCycle();
 	},
+	searchByKanji: function(keyWord) {
+		var result = [];
+		for (var i in this.words) {
+			for (var j in this.words[i]) {
+				if (this.words[i][j].kanji && this.words[i][j].kanji.indexOf(keyWord) >= 0) result.push(this.words[i][j]);
+			}
+		}
+		return result;
+	},
 	resetLearningCycleData: function() {
+		if (this.$statusBox) {
+			this.$statusBox.remove();
+			this.$statusBox = null;
+		}
+		this.clearRegisteredApplicationCommands();
 		this.currentIndex = -1;
 		this.currentWord = null;
 		this.startTime = -1;
@@ -248,22 +313,51 @@ $.extend(JPLearner.prototype, {
 	nextWord: function(optionStr) {
 		this.currentIndex++;
 		this.currentWord = this.chosenWords[this.currentIndex];
-		if (!this.currentWord) this.finishLearningCycle();
-		this.next(this.generateWordsView([this.currentWord]));
-		this.updateStatusBox();
+		if (!this.currentWord) {
+			this.finishLearningCycle();
+		}
+		else {
+			this.next(this.generateWordsView([this.currentWord]));
+			this.updateStatus();
+		}
 	},
 	finishLearningCycle: function() {
-		
+		this.synchronize(function(msg) {
+			this.displayMessage(msg);
+			this.resetLearningCycleData();
+			this._startSelectLessons();
+		})
+	},
+	synchronize: function(callback) {
+		var app = this;
+		var count = this.modifiedUserHistory.length;
+		if (app.modifiedUserHistory.length > 0) {
+			this.executeServerAction("synchronize",{data: JSON.stringify(this.modifiedUserHistory)}, function(data) {
+				app.modifiedUserHistory = [];
+				callback.call(app, count + " record(s) have been synchronized.");
+			});
+		}
+		else {
+			callback.call(app, "0 record is synchronized.");
+		}
 	},
 	startLearningCycle: function() {
 		this.console.registerApplicationCommand(this.console._clearCommand());
 		this.console.registerApplicationCommand(this._tickCommand("0"));
 		this.console.registerApplicationCommand(this._tickCommand("y"));
 		this.console.registerApplicationCommand(this._tickCommand("n"));
+		this.console.registerApplicationCommand(this._exitCommand());
+		this.console.registerApplicationCommand(this._pauseCommand());
+		this.console.registerApplicationCommand(this._resumeCommand());
+		this.console.registerApplicationCommand(this._allCommand());
+		this.console.registerApplicationCommand(this._statusCommand());
+		this.console.registerApplicationCommand(this._findCommand());
+		this.console.registerApplicationCommand(this._syncCommand());
 		this.startTime = (new Date()).getTime();
+		this.lastWordCompleteTime = this.startTime;
 		var app = this;
 		this.clock = window.setInterval(function() {
-			app.updateStatusBox();
+			app.updateStatus();
 		}, 1000);
 		this.nextWord();
 	},
@@ -283,26 +377,111 @@ $.extend(JPLearner.prototype, {
 		var cmd = new Command(tick, hints[tick]);
 		cmd.executeImpl = function(data) {
 			var wordId = app.currentWord.wordId;
+			app.updateStatus();
 			if (typeof app.userHistory[wordId] == "undefined") {
 				app.userHistory[wordId] = {
 					learnCount: counts["0"],
 					testCount: counts["y"] + counts["n"],
-					testPassCount: counts["y"]
+					testPassCount: counts["y"],
+					timeSpent: app.timeSpentOnCurrentWord,
+					wordId: wordId,
+					wordSetId: app.wordSet.wordSetId
 				};
 			}
 			else {
-				app.userHistory[wordId] = {
+				app.userHistory[wordId] = $.extend(app.userHistory[wordId], {
 					learnCount: app.userHistory[wordId].learnCount + counts["0"],
 					testCount: app.userHistory[wordId].testCount + counts["y"] + counts["n"],
-					testPassCount: app.userHistory[wordId].testPassCount + counts["y"]
-				};
-				
+					testPassCount: app.userHistory[wordId].testPassCount + counts["y"],
+					timeSpent: app.userHistory[wordId].timeSpent + app.timeSpentOnCurrentWord
+				});
 			}
+			app.modifiedUserHistory.push(app.userHistory[wordId]);
 			app.lastWordCompleteTime = (new Date()).getTime();
-			app.updateStatusBox();
+			app.timeSpentInTotal += app.timeSpentOnCurrentWord;
+			app.timeSpentOnCurrentWord = 0;
+			app.updateStatus();
 			app.displayMessage(this.hint);
 			app.nextWord();
 		}
+		return cmd;
+	},
+	_allCommand: function() {
+		var app = this;
+		var cmd = new Command("a", "show all parts of current word");
+		cmd.executeImpl = function(data) {
+			app.next(app.generateWordsView([app.currentWord], true));
+		}
+		return cmd;
+	},
+	_exitCommand: function() {
+		var app = this;
+		var cmd = new Command("exit", "exit the application");
+		cmd.executeImpl = function(data) {
+			app.synchronize(function(msg) {
+				this.displayMessage(msg);
+				this.resetLearningCycleData();
+				this.end();
+			})
+		};
+		return cmd;
+	},
+	_pauseCommand: function() {
+		var app = this;
+		var cmd = new Command("pause", "pause");
+		cmd.executeImpl = function(data) {
+			app.paused = true;
+			app.timeSpentOnCurrentWord = (new Date()).getTime() - app.lastWordCompleteTime;
+			app.updateStatus();
+			this.end("paused");
+		} 
+		return cmd;
+	},
+	_resumeCommand: function() {
+		var app = this;
+		var cmd = new Command("resume", "resume from pause");
+		cmd.executeImpl = function(data) {
+			app.paused = false;
+			app.lastWordCompleteTime = (new Date()).getTime() - app.timeSpentOnCurrentWord;
+			app.updateStatus();
+			this.end("resumed")
+		}
+		return cmd;
+	},
+	_statusCommand: function() {
+		var app = this;
+		var cmd = new Command("status", "toggle status box");
+		cmd.executeImpl = function(data) {
+			app.$statusBox.toggle();
+			if (app.$statusBox.is(":visible")) {
+				this.end("status box on");
+			}
+			else {
+				this.end("status box off");
+			}
+		}
+		return cmd;
+	},
+	_findCommand: function() {
+		var app = this;
+		var cmd = new Command("f", "find by kanji");
+		cmd.valueRequired = true;
+		cmd.executeImpl = function(data) {
+			var keyWord = data[0]["value"][0];
+			var result = app.searchByKanji(keyWord);
+			this.end(app.generateWordsView(result, true));
+		}
+		return cmd;
+	},
+	_syncCommand: function() {
+		var app = this;
+		var cmd = new Command("sync", "synchronize user data with server");
+		cmd.executeImpl = function(data) {
+			var thisCmd = this;
+			app.synchronize(function(msg) {
+				thisCmd.end(msg)
+			});
+		};
 		return cmd;
 	}
 });

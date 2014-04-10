@@ -14,7 +14,7 @@
 		<link href="css/jpLearner.css" media="all" rel="stylesheet">
 		<style type="text/css">
 		</style>
-		<script src="http://code.jquery.com/jquery-1.10.2.min.js" ></script>
+		<script src="js/jquery.min.js" ></script>
 		<script src="js/cmd.js" ></script>
 		<script src="js/jpLearner.js" ></script>
 		<script type="text/javascript">

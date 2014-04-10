@@ -23,6 +23,10 @@ public class UserHistory {
 	private long testCount;
 	@Persistent
 	private long testPassCount;
+	@Persistent
+	private long timeSpent;
+	@Persistent
+	private long wordSetId;
 	
 	public String getUserId() {
 		return userId;
@@ -70,5 +74,31 @@ public class UserHistory {
 
 	public void setHistoryId(String historyId) {
 		this.historyId = historyId;
+	}
+
+	public long getTimeSpent() {
+		return timeSpent;
+	}
+
+	public void setTimeSpent(long timeSpent) {
+		this.timeSpent = timeSpent;
+	}
+	
+	public void updateFromDTO(UserHistory dto) {
+		this.historyId = dto.historyId;
+		this.learnCount = dto.learnCount;
+		this.testCount = dto.testCount;
+		this.testPassCount = dto.testPassCount;
+		this.timeSpent = dto.timeSpent;
+		this.wordId = dto.wordId;
+		this.wordSetId = dto.wordSetId;
+	}
+
+	public long getWordSetId() {
+		return wordSetId;
+	}
+
+	public void setWordSetId(long wordSetId) {
+		this.wordSetId = wordSetId;
 	}
 }

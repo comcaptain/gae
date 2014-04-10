@@ -61,6 +61,9 @@ Application.prototype = {
 	},
 	setApplicationCommands: function(cmds) {
 		this.console.setApplicationCommands(cmds);
+	},
+	clearRegisteredApplicationCommands: function() {
+		this.console.clearRegisteredApplicationCommands();
 	}
 };
 Application.prototype.constructor = Application;
@@ -73,6 +76,9 @@ function Command(content, hint) {
 }
 Command.prototype = {
 	name: "CmdConsoleCommand",
+	wrapMessage: function(strMessage) {
+		return new CmdMessage(strMessage, "green")
+	},
 	addOption: function(option) {
 		this.options[option.content] = option;
 	},
@@ -210,9 +216,11 @@ Command.prototype = {
 		this.executeImpl(data)
 	},
 	end: function(message) {
+		if (typeof message == "string") message = this.wrapMessage(message);
 		this.console.onExecuteComplete(message);
 	},
 	displayMessage: function(message) {
+		if (typeof message == "string") message = this.wrapMessage(message);
 		this.console.displayMessage(message);
 	}
 }
@@ -239,7 +247,7 @@ function CmdDisplayTable(columnCount) {
 };
 CmdDisplayTable.prototype = {
 	addTr: function(tds) {
-		if (!this.columnCount) this.columnCount = tds.length;
+		if (!this.columnCount || this.columnCount < tds.length) this.columnCount = tds.length;
 		this.trs.push(tds);
 	}
 };
@@ -247,7 +255,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 (function( $ ) { 
     $.cmdConsole = function(options, $consoleDiv) {
     	this.settings = $.extend({
-    		info: "This is just for fun.\nWeb console UI. \nversion 0.3",
+    		info: "This is just for fun.\nWeb console UI. \nversion 0.4",
     		rightPaste: true
     	}, options);
     	this.$consoleDiv = $consoleDiv;
@@ -292,6 +300,9 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     			},
     			disableRightClickMenu: function($ele) {
     				$ele.attr("oncontextmenu", "return false;");
+    			},
+    			scrollToBottom: function() {
+    				$("body").scrollTop(document.body.scrollHeight);
     			}
     		},
     		onSelect: function(ele, event) {
@@ -385,6 +396,8 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     			if (this.$currentInput) this.$currentInput.removeAttr("contenteditable");
     			this.$currentInput = $cmdConsoleInput;
     			$inputBlock.append($cmdConsoleInput);
+    			this.utils.scrollToBottom();
+    			this.utils.moveCursorToEnd($cmdConsoleInput[0]);
     			$cmdConsoleInput.focus();
 			},
     		displayMessage: function(message) {
@@ -399,6 +412,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
 				else {
 					this._generateLineResult($cmdConsoleBlockResult, data, colorClass);
 				}
+    			this.utils.scrollToBottom();
     		},
     		_enterCommand: function(command) {
 				var currentText = this.$currentInput.text();
@@ -442,6 +456,7 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     		_stopApplication: function() {
     			this.displayMessage(new CmdMessage(this.activeApplication.name + " exited.", "orange"));
     			this.activeApplication = null;
+    			this.registeredApplicationCommands = {};
     		},
     		isApplicationRunning: function() {
     			if (this.activeApplication) return true;
@@ -521,6 +536,9 @@ CmdDisplayTable.prototype.constructor = CmdDisplayTable;
     		registerApplicationCommand: function(cmd) {
     			cmd.registerConsole(this);
     			this.registeredApplicationCommands[cmd.content] = cmd;
+    		},
+    		clearRegisteredApplicationCommands: function() {
+    			this.registeredApplicationCommands = [];
     		},
     		registerApplication: function(app) {
     			app.registerConsole(this);

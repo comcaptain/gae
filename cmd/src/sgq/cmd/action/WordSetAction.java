@@ -5,6 +5,7 @@ import java.util.List;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
+import sgq.cmd.bean.UserHistory;
 import sgq.cmd.bean.Word;
 import sgq.cmd.bean.WordSet;
 import sgq.cmd.util.PMF;
@@ -20,6 +21,7 @@ public class WordSetAction extends ActionSupport{
 	private List<WordSet> wordSetList;
 	private long wordSetId;
 	private List<Word> wordList;
+	private List<UserHistory> userHistory;
 	public List<WordSet> getWordSetList() {
 		return wordSetList;
 	}
@@ -38,11 +40,14 @@ public class WordSetAction extends ActionSupport{
 		}
 		return SUCCESS;
 	}
+	@SuppressWarnings("unchecked")
 	public String retrieveWordList() {
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		try {
 			WordSet wordSet = pm.getObjectById(WordSet.class, this.getWordSetId());
 			this.wordList = (List<Word>) pm.detachCopyAll(wordSet.getWords());
+			Query query = pm.newQuery(UserHistory.class, "wordSetId == :wordSetId");
+			this.userHistory = (List<UserHistory>) pm.detachCopyAll((List<UserHistory>)query.execute(this.getWordSetId()));
 		}
 		finally {
 			pm.close();
@@ -60,5 +65,11 @@ public class WordSetAction extends ActionSupport{
 	}
 	public void setWordList(List<Word> wordList) {
 		this.wordList = wordList;
+	}
+	public List<UserHistory> getUserHistory() {
+		return userHistory;
+	}
+	public void setUserHistory(List<UserHistory> userHistory) {
+		this.userHistory = userHistory;
 	}
 }

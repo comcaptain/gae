@@ -7,6 +7,9 @@
 	margin: 0;
 	overflow-y: auto;
 }
+.cmd_console {
+	padding-bottom: 300px;
+}
 .cmd_console_table {
 	margin: 0;
 	padding: 0;

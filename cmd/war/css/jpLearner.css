@@ -2,46 +2,47 @@
 	position: fixed;
 	top: 22px;
 	right: 12px;
-	background: white;
 	border-radius: 5px;
+	background: white;
 }
 .statusArea .header {
 	border-bottom: 1px solid rgb(229, 229, 229);
 	padding: 5px 10px;
-}
-.statusArea .body {
-	padding: 5px 10px;
+	min-width: 140px;
+	color: rgb(91, 55, 206);
 }
 .statusArea .header > * {
 	display: inline-block;
 }
 .statusArea .header label{
 	font-size: 17px;
-	color: rgb(48, 110, 189);
 }
 .statusArea .header button {
 	float: right;
-	background: white;
 	border: none;
+	background: white;
 }
 button.close:hover {
 	cursor: pointer;
 }
-.status {
-	color: #FF811F;
+.statusArea .body {
 	font-size: 15px;
 }
-.status > * {
-	display: inline-block;
+.statusTable {
+	margin: 10px 0;
+	border-collapse: collapse;
+	width: 100%;
 }
-.status > label {
-	width: 60px;
+.statusTable td {
+	min-width: 65px;
+	text-align: center;
+	color: rgb(255, 150, 68);
 }
-.status > .col2 {
-	min-width: 50px;
+.statusTable td.col2 {
+	min-width: 65px;
 }
-.status > .col3 {
-	min-width: 50px;
+.statusTable td.col3 {
+	min-width: 65px;
 }
 .draggable:active {
 	cursor: move;

@@ -30,6 +30,9 @@
 		</action>
 	</package>
 	<package name="ajax" namespace="/ajax" extends="json-default">
+	    <interceptors>
+	        <interceptor name="json" class="org.apache.struts2.json.JSONInterceptor"/>
+	    </interceptors>
 		<action name = "retrieveWordSetList" class="sgq.cmd.action.WordSetAction" method = "retrieveWordSetList">
 		    <result name="success" type="json">
 		        <param name="excludeProperties">\.words</param>
@@ -38,8 +41,13 @@
 		</action>
 		<action name = "retrieveWordList" class="sgq.cmd.action.WordSetAction" method = "retrieveWordList">
 		    <result name="success" type="json">>
-		        <param name="excludeProperties">\[\d+\]\.wordSet</param>
-		        <param name="root">wordList</param>
+		        <param name="excludeProperties">^wordList\[\d+\]\.wordSet</param>
+		        <param name="includeProperties">userHistory.*, wordList.*</param>
+		    </result>
+		</action>
+		<action name="synchronize" class="sgq.cmd.action.SynchronizeUserData">
+		    <result name="success" type="json">
+		        <param name="root">result</param>
 		    </result>
 		</action>
 	</package>
