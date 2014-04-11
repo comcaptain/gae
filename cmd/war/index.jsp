@@ -17,7 +17,7 @@
 		<script type="text/javascript">
 			var cmdObj;
 			$(document).ready(function() {
-				cmdObj = $("body").cmdConsole({rightPaste: false});
+				cmdObj = $("body").cmdConsole({rightPaste: true});
 				var cmd = new Command("cal", "cal [expression], calculate, use javascript grammar");
 				cmd.valueRequired = true;
 				cmd.executeImpl = function(data) {

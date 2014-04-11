@@ -325,12 +325,12 @@ $.extend(JPLearner.prototype, {
 				filtered.push(word);
 			}
 		}
-		this.chosenWords = filtered;
-		if (this.chosenWords.length == 0) {
+		if (filtered.length == 0) {
 			this.displayMessage("no word selected, please choose again");
 			this._startSelectFilters();
 		}
 		else {
+			this.chosenWords = filtered;
 			this.displayMessage(this.chosenWords.length + " word(s) have been selected now.");
 			this.next("Please choose the visible word parts: c(Chinese中国語) h(hiragana平仮名) kanji(kanji漢字)," + 
 					" e.g. ch, means only show Chinese and hiragana",this.selectVisibleParts);
@@ -409,6 +409,7 @@ $.extend(JPLearner.prototype, {
 		this.console.registerApplicationCommand(this._statusCommand());
 		this.console.registerApplicationCommand(this._findCommand());
 		this.console.registerApplicationCommand(this._syncCommand());
+		this.console.registerApplicationCommand(this._endCommand());
 		this.startTime = (new Date()).getTime();
 		this.lastWordCompleteTime = this.startTime;
 		var app = this;
@@ -538,6 +539,14 @@ $.extend(JPLearner.prototype, {
 				thisCmd.end(msg)
 			});
 		};
+		return cmd;
+	},
+	_endCommand: function() {
+		var app = this;
+		var cmd = new Command("end", "end this learning cycle");
+		cmd.executeImpl = function(data) {
+			app.finishLearningCycle();
+		}
 		return cmd;
 	}
 });
